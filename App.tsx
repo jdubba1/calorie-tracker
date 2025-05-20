@@ -8,6 +8,7 @@ import HomeScreen from './screens/HomeScreen';
 import MealsScreen from './screens/MealScreen';
 import EditMealScreen from './screens/EditMealScreen';
 import HistoryScreen from './screens/HistoryScreen';
+import SettingsScreen from './screens/SettingsScreen';
 
 // Define theme colors
 const colors = {
@@ -35,6 +36,7 @@ export type RootStackParamList = {
   Home: undefined;
   Meals: undefined;
   History: undefined;
+  Settings: undefined;
   EditMeal: {
     id: string;
     label?: string;
@@ -85,6 +87,11 @@ export default function App() {
             name="EditMeal" 
             component={EditMealScreen}
             options={{ title: 'Edit Meal' }}
+          />
+          <Stack.Screen 
+            name="Settings" 
+            component={SettingsScreen}
+            options={{ title: 'Goals' }}
           />
         </Stack.Navigator>
       </NavigationContainer>

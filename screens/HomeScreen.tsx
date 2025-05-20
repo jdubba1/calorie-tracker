@@ -32,6 +32,47 @@ import MicrophoneIcon from '../components/MicrophoneIcon';
 import StopIcon from '../components/StopIcon';
 import LoadingDots from '../components/LoadingDots';
 import SquareSwitch from '../components/SquareSwitch';
+import { Ionicons } from '@expo/vector-icons';
+
+// Get screen dimensions
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Function to calculate responsive sizes based on screen height
+const getResponsiveSizes = () => {
+  // Define thresholds for different size categories
+  // iPhone SE (smallest): ~667pt height
+  // Mid-size: ~736-812pt height  
+  // Large (iPhone Pro Max): 926pt+ height
+  
+  if (SCREEN_HEIGHT < 700) {
+    // Small screen (iPhone SE, etc)
+    return {
+      metricNumberSize: 64,
+      metricInfoTextSize: 16,
+      metricContainerHeight: 60,
+      verticalMargin: 2,
+    };
+  } else if (SCREEN_HEIGHT < 850) {
+    // Medium screen (iPhone X/11/12, etc)
+    return {
+      metricNumberSize: 70,
+      metricInfoTextSize: 18,
+      metricContainerHeight: 65,
+      verticalMargin: 3,
+    };
+  } else {
+    // Large screen (iPhone Pro Max, etc)
+    return {
+      metricNumberSize: 84,
+      metricInfoTextSize: 20,
+      metricContainerHeight: 75,
+      verticalMargin: 4,
+    };
+  }
+};
+
+// Get responsive sizes based on device
+const responsiveSizes = getResponsiveSizes();
 
 // Define theme colors
 const colors = {
@@ -44,6 +85,31 @@ const colors = {
   greenLight: '#059669', // emerald-600
   purple: '#a855f7',    // purple-500
   red: '#f43f5e',       // rose-500
+};
+
+// Function to get color based on percentage
+const getColorForPercentage = (percentage: number): string => {
+  // Green (0%) to Yellow (50%) to Red (100%)
+  if (percentage <= 0) return '#10b981'; // Emerald-500 for 0%
+  if (percentage >= 100) return '#f43f5e'; // Rose-500 for 100%
+  
+  if (percentage < 50) {
+    // Green to Yellow gradient (0-50%)
+    const ratio = percentage / 50;
+    // Interpolate between green and yellow
+    const r = 16 + (234 - 16) * ratio;   // from 16 (green) to 234 (yellow)
+    const g = 185 - (185 - 179) * ratio; // from 185 (green) to 179 (yellow)
+    const b = 129 - (129 - 8) * ratio;   // from 129 (green) to 8 (yellow)
+    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+  } else {
+    // Yellow to Red gradient (50-100%)
+    const ratio = (percentage - 50) / 50;
+    // Interpolate between yellow and red
+    const r = 234 + (244 - 234) * ratio; // from 234 (yellow) to 244 (red)
+    const g = 179 - (179 - 63) * ratio;  // from 179 (yellow) to 63 (red)
+    const b = 8 + (94 - 8) * ratio;      // from 8 (yellow) to 94 (red)
+    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+  }
 };
 
 type Entry = {
@@ -75,9 +141,19 @@ export default function HomeScreen({ navigation }: Props) {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [calorieGoal, setCalorieGoal] = useState('');
+  const [proteinGoal, setProteinGoal] = useState('');
 
   const totalCalories = todayEntries.reduce((sum, e) => sum + e.calories, 0);
   const totalProtein = todayEntries.reduce((sum, e) => sum + e.protein, 0);
+
+  const caloriePercentage = calorieGoal && totalCalories > 0 
+    ? Math.round((totalCalories / parseInt(calorieGoal)) * 100) 
+    : 0;
+  
+  const proteinPercentage = proteinGoal && totalProtein > 0
+    ? Math.round((totalProtein / parseInt(proteinGoal)) * 100)
+    : 0;
 
   // Request permissions for recording
   useEffect(() => {
@@ -111,6 +187,18 @@ export default function HomeScreen({ navigation }: Props) {
         setEntries(allEntries);
         updateTodayEntries(allEntries);
       }
+      
+      // Load goals
+      const storedCalorieGoal = await AsyncStorage.getItem('calorieGoal');
+      const storedProteinGoal = await AsyncStorage.getItem('proteinGoal');
+      
+      if (storedCalorieGoal) {
+        setCalorieGoal(storedCalorieGoal);
+      }
+      
+      if (storedProteinGoal) {
+        setProteinGoal(storedProteinGoal);
+      }
     };
     load();
     
@@ -131,6 +219,18 @@ export default function HomeScreen({ navigation }: Props) {
           const allEntries = JSON.parse(stored);
           setEntries(allEntries);
           updateTodayEntries(allEntries);
+        }
+        
+        // Reload goals
+        const storedCalorieGoal = await AsyncStorage.getItem('calorieGoal');
+        const storedProteinGoal = await AsyncStorage.getItem('proteinGoal');
+        
+        if (storedCalorieGoal) {
+          setCalorieGoal(storedCalorieGoal);
+        }
+        
+        if (storedProteinGoal) {
+          setProteinGoal(storedProteinGoal);
         }
       };
       load();
@@ -345,16 +445,46 @@ export default function HomeScreen({ navigation }: Props) {
               showsVerticalScrollIndicator={false}
             >
               <View style={styles.inner}>
-                <View style={styles.totalsContainer}>
+                <View style={styles.headerContainer}>
                   <Text style={styles.todayLabel}>Today</Text>
-                  <Text style={styles.metric}>
+                  <TouchableOpacity 
+                    style={styles.settingsButton}
+                    onPress={() => navigation.navigate('Settings')}
+                  >
+                    <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                
+                <View style={styles.totalsContainer}>
+                  <View style={styles.metricContainer}>
                     <Text style={styles.metricNumber}>{totalCalories}</Text>
-                    <Text style={styles.metricUnit}> kcal</Text>
-                  </Text>
-                  <Text style={styles.metric}>
+                    <View style={styles.metricInfoContainer}>
+                      {calorieGoal && (
+                        <Text style={[
+                          styles.metricInfoText, 
+                          { color: getColorForPercentage(caloriePercentage) }
+                        ]}>
+                          {caloriePercentage}%
+                        </Text>
+                      )}
+                      <Text style={styles.metricInfoText}>kcal</Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.metricContainer}>
                     <Text style={styles.metricNumber}>{totalProtein}</Text>
-                    <Text style={styles.metricUnit}> g protein</Text>
-                  </Text>
+                    <View style={styles.metricInfoContainer}>
+                      {proteinGoal && (
+                        <Text style={[
+                          styles.metricInfoText, 
+                          { color: getColorForPercentage(proteinPercentage) }
+                        ]}>
+                          {proteinPercentage}%
+                        </Text>
+                      )}
+                      <Text style={styles.metricInfoText}>g protein</Text>
+                    </View>
+                  </View>
                 </View>
 
                 <View style={styles.headerRow}>
@@ -452,7 +582,7 @@ export default function HomeScreen({ navigation }: Props) {
                   placeholderTextColor={colors.textSecondary}
                   value={label}
                   onChangeText={setLabel}
-                  returnKeyType="done"               // show “done” key
+                  returnKeyType="done"               // show "done" key
                   onSubmitEditing={dismissKeyboard}  
                   // inputAccessoryViewID={accessoryID}  // link to your toolbar
                   onFocus={() => setFocusedInput('label')}
@@ -568,22 +698,6 @@ export default function HomeScreen({ navigation }: Props) {
             </View>
         </InputAccessoryView>
       )}
-
-
-      {/* Custom numeric keyboard done button */}
-      {/* {Platform.OS === 'ios' && isKeyboardVisible && (focusedInput === 'label') && (
-        <View style={[
-          styles.numericDoneContainer, 
-          { bottom: keyboardHeight + 10 } // Position it 10px above the keyboard
-        ]}>
-          <TouchableOpacity
-            style={styles.numericDoneButton}
-            onPress={() => Keyboard.dismiss()}
-          >
-            <Text style={styles.numericDoneText}>Done</Text>
-          </TouchableOpacity>
-        </View>
-      )} */}
     </SafeAreaView>
   );
 }
@@ -608,35 +722,50 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   inner: {
-    padding: 24,
-    paddingBottom: 24,
+    padding: 16,
+    paddingBottom: 16,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  settingsButton: {
+    padding: 4,
   },
   totalsContainer: {
-    marginBottom: 32,
-    marginTop: 20,
+    marginBottom: 28,
     alignItems: 'flex-start',
   },
   todayLabel: {
     fontSize: 16,
     color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    marginBottom: 8,
   },
-  metric: {
+  metricContainer: {
     flexDirection: 'row',
-    marginVertical: 6,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  metricInfoContainer: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    marginLeft: 12,
+    height: responsiveSizes.metricContainerHeight,
   },
   metricNumber: {
-    fontSize: 84, // Bumped up by 20
+    fontSize: responsiveSizes.metricNumberSize,
     fontWeight: 'bold',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     color: colors.text,
   },
-  metricUnit: {
-    fontSize: 24,
-    alignSelf: 'flex-end',
+  metricInfoText: {
+    fontSize: responsiveSizes.metricInfoTextSize,
     color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    marginVertical: responsiveSizes.verticalMargin,
   },
   headerRow: {
     flexDirection: 'row',
@@ -821,27 +950,6 @@ const styles = StyleSheet.create({
   dismissButtonText: {
     color: colors.green,
     fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  numericDoneContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    backgroundColor: colors.background,
-    padding: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    alignItems: 'flex-end',
-    zIndex: 1000,
-  },
-  numericDoneButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  numericDoneText: {
-    color: colors.green,
-    fontSize: 16,
     fontWeight: 'bold',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
