@@ -49,6 +49,7 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
+  console.log('🔥 app loaded from metro!')
   return (
     <GestureHandlerRootView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />

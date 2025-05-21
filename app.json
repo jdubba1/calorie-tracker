@@ -13,7 +13,12 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jdubba1.calorietracker",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMicrophoneUsageDescription": "We use your microphone to record meal descriptions."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,6 +29,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "78ff0c7e-85f1-496a-9a2b-3215ef871585"
+      }
     }
   }
 }

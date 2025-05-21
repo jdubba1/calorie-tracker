@@ -1,30 +1,13 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Animated as RNAnimated, Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, FlatList, TouchableOpacity, Animated as RNAnimated, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useFocusEffect } from '@react-navigation/native';
 import { isFromDate, formatDateForDisplay, getOffsetDate } from '../utils/dateUtils';
-
-// Define theme colors
-const colors = {
-  background: '#18181b', // dark zinc-900
-  card: '#27272a',      // dark zinc-800
-  text: '#f4f4f5',      // zinc-100
-  textSecondary: '#a1a1aa', // zinc-400
-  border: '#3f3f46',    // zinc-700
-  green: '#10b981',     // emerald-500
-  red: '#ef4444',       // red-500
-};
-
-type Entry = {
-  id: string;
-  label?: string;
-  calories: number;
-  protein: number;
-  timestamp: number;
-};
+import { Entry, loadEntries, saveEntries } from '../utils/storageService';
+import { mealScreenStyles as styles } from '../styles/mealScreenStyles';
+import { colors } from '../styles/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Meals'>;
 
@@ -34,13 +17,26 @@ export default function MealsScreen({ navigation }: Props) {
   const swipeableRefs = useRef<Swipeable[]>([]);
   const [itemsBeingDeleted, setItemsBeingDeleted] = useState<{[key: string]: RNAnimated.Value}>({});
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [isLoading, setIsLoading] = useState(false);
+  const isLoadingRef = useRef(false);
 
-  const loadEntries = async () => {
-    const stored = await AsyncStorage.getItem('entries');
-    if (stored) {
-      const allEntries = JSON.parse(stored);
-      setEntries(allEntries);
-      filterEntriesByDate(allEntries, currentDate);
+  const loadMealEntries = async () => {
+    setIsLoading(true);
+    try {
+      const allEntries = await loadEntries();
+      console.log(`MealScreen: Loaded ${allEntries.length} entries from storage`);
+      
+      // Only update entries if we actually got some or if entries state is already empty
+      // This prevents overwriting existing entries with an empty array
+      if (allEntries.length > 0 || entries.length === 0) {
+        setEntries(allEntries);
+        filterEntriesByDate(allEntries, currentDate);
+      }
+    } catch (error) {
+      console.error('Failed to load entries:', error);
+      Alert.alert('Error', 'Failed to load your meal data');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -66,18 +62,50 @@ export default function MealsScreen({ navigation }: Props) {
 
   // Load entries on initial mount
   useEffect(() => {
-    loadEntries();
+    loadMealEntries();
+    // Don't set entries to empty array on mount, which would trigger a save of empty data
   }, []);
 
   // When current date changes, filter entries
   useEffect(() => {
-    filterEntriesByDate(entries, currentDate);
+    // Only filter if we have entries to filter
+    if (entries.length > 0 || filteredEntries.length > 0) {
+      filterEntriesByDate(entries, currentDate);
+    }
   }, [currentDate, entries]);
 
   // Reload entries whenever the screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      loadEntries();
+      // CRITICAL FIX: Skip if we're already in a loading cycle to prevent infinite loops
+      if (!isLoadingRef.current) {
+        isLoadingRef.current = true;
+        
+        // Load fresh data when screen appears, but only if really needed
+        console.log('MealScreen (focus): Checking for new data');
+        const checkForChanges = async () => {
+          try {
+            const freshEntries = await loadEntries();
+            // Only update if data actually changed to avoid re-render loops
+            const currentIds = entries.map(e => e.id).sort().join(',');
+            const newIds = freshEntries.map(e => e.id).sort().join(',');
+            
+            if (currentIds !== newIds) {
+              console.log('MealScreen: Entry data changed, updating');
+              setEntries(freshEntries);
+              filterEntriesByDate(freshEntries, currentDate);
+            } else {
+              console.log('MealScreen: No change in data, skipping update');
+            }
+          } catch (error) {
+            console.error('Failed to check for changes:', error);
+          } finally {
+            isLoadingRef.current = false;
+          }
+        };
+        
+        checkForChanges();
+      }
       
       // Close any open swipeables
       swipeableRefs.current.forEach(ref => {
@@ -85,10 +113,10 @@ export default function MealsScreen({ navigation }: Props) {
           ref.close();
         }
       });
-    }, [])
+    }, []) // REMOVING entries dependency to prevent infinite loops
   );
 
-  const deleteEntry = (id: string) => {
+  const deleteEntry = async (id: string) => {
     // Create new animated value for this item if it doesn't exist
     if (!itemsBeingDeleted[id]) {
       const newAnimValue = new RNAnimated.Value(1);
@@ -105,11 +133,25 @@ export default function MealsScreen({ navigation }: Props) {
         toValue: 0,
         duration: 300,
         useNativeDriver: true
-      }).start(() => {
+      }).start(async () => {
         // After animation completes, update the data
         const updated = entries.filter(e => e.id !== id);
         setEntries(updated);
-        AsyncStorage.setItem('entries', JSON.stringify(updated));
+        
+        // Persist changes - with better error handling and retry
+        try {
+          console.log(`Deleting entry ${id} and saving updated entries array (${updated.length} entries)`);
+          const saveSuccess = await saveEntries(updated);
+          
+          if (!saveSuccess) {
+            // If the initial save failed, try once more
+            console.log('First save attempt failed, retrying...');
+            await saveEntries(updated);
+          }
+        } catch (error) {
+          console.error('Failed to save after delete:', error);
+          Alert.alert('Error', 'Failed to delete meal. Please try again.');
+        }
         
         // Remove this item from being tracked
         setItemsBeingDeleted(prev => {
@@ -250,125 +292,3 @@ export default function MealsScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  listContent: {
-    padding: 20,
-    paddingBottom: 100, // Extra padding at bottom
-  },
-  dateNavigation: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  navButton: {
-    padding: 10,
-    width: 44,
-    alignItems: 'center',
-  },
-  navButtonText: {
-    color: colors.text,
-    fontSize: 18,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  disabledText: {
-    color: colors.border,
-  },
-  dateText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: 'bold',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  dailyTotals: {
-    padding: 12,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    alignItems: 'center',
-  },
-  totalValue: {
-    color: colors.text,
-    fontSize: 16,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  row: {
-    padding: 16,
-    backgroundColor: colors.card,
-    borderRadius: 0,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  label: {
-    fontWeight: '600',
-    fontSize: 16,
-    marginBottom: 4,
-    color: colors.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  values: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  rightAction: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    borderRadius: 0,
-    marginBottom: 12,
-    backgroundColor: colors.red,
-  },
-  leftAction: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    borderRadius: 0,
-    marginBottom: 12,
-    backgroundColor: colors.green,
-  },
-  actionButton: {
-    padding: 16,
-    width: 100,
-    alignItems: 'center',
-  },
-  actionText: {
-    color: colors.text,
-    fontWeight: 'bold',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  emptyText: {
-    color: colors.textSecondary,
-    textAlign: 'center',
-    padding: 20,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  historyButtonContainer: {
-    position: 'absolute',
-    bottom: 30,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  historyButton: {
-    backgroundColor: colors.card,
-    padding: 12,
-    paddingHorizontal: 24,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  historyButtonText: {
-    color: colors.text,
-    fontSize: 16,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-});

@@ -16,7 +16,7 @@ export default function SquareSwitch({
   leftLabel = 'Off',
   rightLabel = 'On',
   activeColor = '#a855f7', // purple-500
-  inactiveColor = '#3f3f46', // zinc-700
+  inactiveColor = '#059669', // emerald-600r
 }: SquareSwitchProps) {
   return (
     <View style={styles.container}>

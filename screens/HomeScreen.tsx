@@ -1,10 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -14,11 +13,9 @@ import {
   Alert,
   Animated,
   ScrollView,
-  Dimensions,
   StatusBar,
   InputAccessoryView,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import { isToday } from '../utils/dateUtils';
@@ -33,92 +30,17 @@ import StopIcon from '../components/StopIcon';
 import LoadingDots from '../components/LoadingDots';
 import SquareSwitch from '../components/SquareSwitch';
 import { Ionicons } from '@expo/vector-icons';
+import { 
+  Entry, 
+  loadEntries, 
+  saveEntries, 
+  loadCalorieGoal, 
+  loadProteinGoal 
+} from '../utils/storageService';
 
-// Get screen dimensions
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Function to calculate responsive sizes based on screen height
-const getResponsiveSizes = () => {
-  // Define thresholds for different size categories
-  // iPhone SE (smallest): ~667pt height
-  // Mid-size: ~736-812pt height  
-  // Large (iPhone Pro Max): 926pt+ height
-  
-  if (SCREEN_HEIGHT < 700) {
-    // Small screen (iPhone SE, etc)
-    return {
-      metricNumberSize: 64,
-      metricInfoTextSize: 16,
-      metricContainerHeight: 60,
-      verticalMargin: 2,
-    };
-  } else if (SCREEN_HEIGHT < 850) {
-    // Medium screen (iPhone X/11/12, etc)
-    return {
-      metricNumberSize: 70,
-      metricInfoTextSize: 18,
-      metricContainerHeight: 65,
-      verticalMargin: 3,
-    };
-  } else {
-    // Large screen (iPhone Pro Max, etc)
-    return {
-      metricNumberSize: 84,
-      metricInfoTextSize: 20,
-      metricContainerHeight: 75,
-      verticalMargin: 4,
-    };
-  }
-};
-
-// Get responsive sizes based on device
-const responsiveSizes = getResponsiveSizes();
-
-// Define theme colors
-const colors = {
-  background: '#18181b', // dark zinc-900
-  card: '#27272a',      // dark zinc-800
-  text: '#f4f4f5',      // zinc-100
-  textSecondary: '#a1a1aa', // zinc-400
-  border: '#3f3f46',    // zinc-700
-  green: '#10b981',     // emerald-500
-  greenLight: '#059669', // emerald-600
-  purple: '#a855f7',    // purple-500
-  red: '#f43f5e',       // rose-500
-};
-
-// Function to get color based on percentage
-const getColorForPercentage = (percentage: number): string => {
-  // Green (0%) to Yellow (50%) to Red (100%)
-  if (percentage <= 0) return '#10b981'; // Emerald-500 for 0%
-  if (percentage >= 100) return '#f43f5e'; // Rose-500 for 100%
-  
-  if (percentage < 50) {
-    // Green to Yellow gradient (0-50%)
-    const ratio = percentage / 50;
-    // Interpolate between green and yellow
-    const r = 16 + (234 - 16) * ratio;   // from 16 (green) to 234 (yellow)
-    const g = 185 - (185 - 179) * ratio; // from 185 (green) to 179 (yellow)
-    const b = 129 - (129 - 8) * ratio;   // from 129 (green) to 8 (yellow)
-    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
-  } else {
-    // Yellow to Red gradient (50-100%)
-    const ratio = (percentage - 50) / 50;
-    // Interpolate between yellow and red
-    const r = 234 + (244 - 234) * ratio; // from 234 (yellow) to 244 (red)
-    const g = 179 - (179 - 63) * ratio;  // from 179 (yellow) to 63 (red)
-    const b = 8 + (94 - 8) * ratio;      // from 8 (yellow) to 94 (red)
-    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
-  }
-};
-
-type Entry = {
-  id: string;
-  label?: string;
-  calories: number;
-  protein: number;
-  timestamp: number;
-};
+// Import shared styles
+import { colors, getColorForPercentage } from '../styles/theme';
+import { homeScreenStyles as styles } from '../styles/homeScreenStyles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -176,54 +98,40 @@ export default function HomeScreen({ navigation }: Props) {
     }
     
     setLastMidnightCheck(today);
-    setTodayEntries(allEntries.filter(entry => isToday(entry.timestamp)));
+    
+    // Filter and immediately update
+    const todaysEntries = allEntries.filter(entry => isToday(entry.timestamp));
+    console.log(`Updating today entries: ${todaysEntries.length} entries for today`);
+    setTodayEntries(todaysEntries);
   }, [lastMidnightCheck]);
 
+  // Add an additional effect to ensure todayEntries stays in sync with entries
+  useEffect(() => {
+    // Always make sure todayEntries is in sync with the main entries array
+    updateTodayEntries(entries);
+  }, [entries, updateTodayEntries]);
+
+  // Refs for tracking loading state and preventing loops
+  const initialLoadRef = useRef(false);
+  
+  // Initial load effect - only runs ONCE on mount
   useEffect(() => {
     const load = async () => {
-      const stored = await AsyncStorage.getItem('entries');
-      if (stored) {
-        const allEntries = JSON.parse(stored);
+      // Prevent duplicate loads
+      if (initialLoadRef.current) return;
+      initialLoadRef.current = true;
+      
+      try {
+        const allEntries = await loadEntries();
+        console.log(`HomeScreen: Initial load - ${allEntries.length} entries from storage`);
+        
+        // Always set entries on initial mount
         setEntries(allEntries);
         updateTodayEntries(allEntries);
-      }
-      
-      // Load goals
-      const storedCalorieGoal = await AsyncStorage.getItem('calorieGoal');
-      const storedProteinGoal = await AsyncStorage.getItem('proteinGoal');
-      
-      if (storedCalorieGoal) {
-        setCalorieGoal(storedCalorieGoal);
-      }
-      
-      if (storedProteinGoal) {
-        setProteinGoal(storedProteinGoal);
-      }
-    };
-    load();
-    
-    // Set up a timer to check for date changes every minute
-    const timer = setInterval(() => {
-      updateTodayEntries(entries);
-    }, 60000); // Check every minute
-    
-    return () => clearInterval(timer);
-  }, [updateTodayEntries]);
-
-  // Reload entries when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      const load = async () => {
-        const stored = await AsyncStorage.getItem('entries');
-        if (stored) {
-          const allEntries = JSON.parse(stored);
-          setEntries(allEntries);
-          updateTodayEntries(allEntries);
-        }
         
-        // Reload goals
-        const storedCalorieGoal = await AsyncStorage.getItem('calorieGoal');
-        const storedProteinGoal = await AsyncStorage.getItem('proteinGoal');
+        // Load goals
+        const storedCalorieGoal = await loadCalorieGoal();
+        const storedProteinGoal = await loadProteinGoal();
         
         if (storedCalorieGoal) {
           setCalorieGoal(storedCalorieGoal);
@@ -232,17 +140,162 @@ export default function HomeScreen({ navigation }: Props) {
         if (storedProteinGoal) {
           setProteinGoal(storedProteinGoal);
         }
+        
+        // Set initial data loaded flag AFTER we've loaded entries from storage
+        prevEntriesRef.current = JSON.stringify(allEntries);
+        isInitialDataLoadedRef.current = true;
+        console.log('HomeScreen: Initial data loaded, persistence enabled');
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      }
+    };
+    load();
+    
+    // Set up a timer to check for storage changes and midnight rollover every 30 seconds
+    const timer = setInterval(async () => {
+      try {
+        // Check for new data
+        const freshEntries = await loadEntries();
+        const currentIdsSet = new Set(entries.map(e => e.id));
+        const freshIdsSet = new Set(freshEntries.map(e => e.id));
+        
+        // Check if entries were added or removed
+        let hasChanges = false;
+        
+        // Check if any entries were added or removed
+        if (currentIdsSet.size !== freshIdsSet.size) {
+          hasChanges = true;
+        } else {
+          // Check if any entries in current aren't in fresh (deleted entries)
+          for (const id of currentIdsSet) {
+            if (!freshIdsSet.has(id)) {
+              hasChanges = true;
+              break;
+            }
+          }
+          
+          // Check if any entries in fresh aren't in current (new entries)
+          for (const id of freshIdsSet) {
+            if (!currentIdsSet.has(id)) {
+              hasChanges = true;
+              break;
+            }
+          }
+        }
+        
+        if (hasChanges) {
+          console.log('HomeScreen: Detected entry changes in timer, updating');
+          setEntries(freshEntries);
+        }
+        
+        // Always update today entries to handle midnight rollover
+        updateTodayEntries(hasChanges ? freshEntries : entries);
+      } catch (error) {
+        console.error('Timer update error:', error);
+      }
+    }, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(timer);
+  }, []); // Empty dependency array - only run once on mount
+
+  // Reload entries when screen comes into focus - USING REF TO PREVENT LOOPS
+  const isLoadingRef = useRef(false);
+  
+  useFocusEffect(
+    useCallback(() => {
+      // Force a fresh reload of data every time the screen gains focus
+      const load = async () => {
+        try {
+          console.log('HomeScreen: Screen focused, reloading data');
+          isLoadingRef.current = true;
+          
+          // Always load fresh data from storage
+          const allEntries = await loadEntries();
+          console.log(`HomeScreen (focus): Loaded ${allEntries.length} entries from storage`);
+          
+          // Always update entries when the screen comes into focus
+          setEntries(allEntries);
+          updateTodayEntries(allEntries);
+          
+          // Update cached entries string to prevent immediate re-save
+          prevEntriesRef.current = JSON.stringify(allEntries);
+          
+          // Set the initial data loaded flag if not already set
+          if (!isInitialDataLoadedRef.current) {
+            isInitialDataLoadedRef.current = true;
+            console.log('HomeScreen: Initial data loaded via focus effect, persistence enabled');
+          }
+          
+          // Reload goals
+          const storedCalorieGoal = await loadCalorieGoal();
+          const storedProteinGoal = await loadProteinGoal();
+          
+          if (storedCalorieGoal) {
+            setCalorieGoal(storedCalorieGoal);
+          }
+          
+          if (storedProteinGoal) {
+            setProteinGoal(storedProteinGoal);
+          }
+        } catch (error) {
+          console.error('Failed to load data:', error);
+        } finally {
+          isLoadingRef.current = false;
+        }
       };
+      
+      // Execute load function
       load();
-    }, [updateTodayEntries])
+      
+      // Close any open UI elements when returning to this screen
+      return () => {
+        // Cleanup if needed when screen loses focus
+      };
+    }, [updateTodayEntries]) // REMOVE entries dependency - it causes infinite loops!
   );
 
+  // Track previous entries to avoid unnecessary saves
+  const prevEntriesRef = useRef<string>('');
+  const isInitialDataLoadedRef = useRef(false);
+  
   useEffect(() => {
-    AsyncStorage.setItem('entries', JSON.stringify(entries));
-    updateTodayEntries(entries);
+    const persistEntries = async () => {
+      // Don't save until initial data is loaded from storage
+      if (!isInitialDataLoadedRef.current) {
+        console.log('HomeScreen: Skipping save, initial data not yet loaded');
+        return;
+      }
+      
+      // Create a string representation of current entries to compare with previous
+      const entriesString = JSON.stringify(entries);
+      
+      // Skip if entries haven't changed
+      if (entriesString === prevEntriesRef.current) {
+        console.log('HomeScreen: Skipping save, entries unchanged');
+        return;
+      }
+      
+      try {
+        console.log(`HomeScreen: Saving ${entries.length} entries (data changed)`);
+        await saveEntries(entries);
+        updateTodayEntries(entries);
+        
+        // Update ref after successful save
+        prevEntriesRef.current = entriesString;
+      } catch (error) {
+        console.error('Failed to save entries:', error);
+        Alert.alert(
+          'Storage Error',
+          'Failed to save your meal data. Please try again.'
+        );
+      }
+    };
+    
+    // Always try to persist entries, but with change detection
+    persistEntries();
   }, [entries, updateTodayEntries]);
 
-  const addEntry = () => {
+  const addEntry = async () => {
     const calories = parseInt(caloriesInput);
     const protein = parseInt(proteinInput);
     if (isNaN(calories) || isNaN(protein)) return;
@@ -255,7 +308,18 @@ export default function HomeScreen({ navigation }: Props) {
       timestamp: Date.now(),
     };
 
-    setEntries(prev => [newEntry, ...prev]);
+    // Update state with new entry
+    const updatedEntries = [newEntry, ...entries];
+    setEntries(updatedEntries);
+    
+    // Explicitly save to storage right away
+    try {
+      await saveEntries(updatedEntries);
+      console.log('Entry added and saved to storage');
+    } catch (error) {
+      console.error('Failed to save entry directly:', error);
+    }
+    
     setLabel('');
     setCaloriesInput('');
     setProteinInput('');
@@ -495,7 +559,6 @@ export default function HomeScreen({ navigation }: Props) {
                     leftLabel="Manual"
                     rightLabel="AI"
                     activeColor={colors.purple}
-                    inactiveColor={colors.border}
                   />
                 </View>
 
@@ -678,7 +741,7 @@ export default function HomeScreen({ navigation }: Props) {
             
             <TouchableOpacity 
               style={styles.buttonPrimary}
-              onPress={addEntry}
+              onPress={() => addEntry()}
             >
               <Text style={styles.buttonPrimaryText}>Add Meal</Text>
             </TouchableOpacity>
@@ -701,256 +764,3 @@ export default function HomeScreen({ navigation }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  inner: {
-    padding: 16,
-    paddingBottom: 16,
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  settingsButton: {
-    padding: 4,
-  },
-  totalsContainer: {
-    marginBottom: 28,
-    alignItems: 'flex-start',
-  },
-  todayLabel: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  metricContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  metricInfoContainer: {
-    flexDirection: 'column',
-    justifyContent: 'center',
-    marginLeft: 12,
-    height: responsiveSizes.metricContainerHeight,
-  },
-  metricNumber: {
-    fontSize: responsiveSizes.metricNumberSize,
-    fontWeight: 'bold',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    color: colors.text,
-  },
-  metricInfoText: {
-    fontSize: responsiveSizes.metricInfoTextSize,
-    color: colors.textSecondary,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    marginVertical: responsiveSizes.verticalMargin,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  inputLabel: {
-    fontSize: 14,
-    color: colors.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  largeInputContainer: {
-    marginBottom: 0,
-  },
-  largeInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 0,
-    padding: 12,
-    backgroundColor: colors.card,
-    minHeight: 100,
-    maxHeight: 150,
-  },
-  textArea: {
-    fontSize: 14,
-    color: colors.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    textAlignVertical: 'top',
-    padding: 0,
-    height: '100%',
-  },
-  disabledInput: {
-    opacity: 0.8,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    marginBottom: 8,
-  },
-  iconButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  rightButtons: {
-    flexDirection: 'row',
-  },
-  iconButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 12,
-    marginLeft: 8,
-    width: 48,
-    height: 48,
-  },
-  clearButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 12,
-    width: 90,
-    height: 48,
-  },
-  clearButtonText: {
-    color: colors.text,
-    fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  recordingButton: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-    borderColor: colors.red,
-  },
-  errorMessage: {
-    color: colors.red,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 0,
-    padding: 12,
-    fontSize: 14,
-    color: colors.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    backgroundColor: colors.card,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    marginBottom: 12,
-  },
-  inputWrapper: {
-    width: '48%',
-    position: 'relative',
-  },
-  inputHalf: {
-    width: '100%',
-  },
-  unitLabel: {
-    position: 'absolute',
-    right: 12,
-    top: 12,
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  aiGeneratedInput: {
-    color: colors.purple,
-    borderColor: colors.purple,
-  },
-  bottomBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 24,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
-    backgroundColor: colors.background,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    height: 96,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-  },
-  buttonPrimary: {
-    backgroundColor: colors.green,
-    borderRadius: 0,
-    padding: 14,
-    width: '48%',
-    alignItems: 'center',
-  },
-  buttonPrimaryText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  buttonOutline: {
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 0,
-    padding: 14,
-    width: '48%',
-    alignItems: 'center',
-  },
-  buttonOutlineText: {
-    color: colors.text,
-    fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  accessoryContainer: {
-    backgroundColor: colors.background,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    padding: 8,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
-  dismissButton: {
-    padding: 8,
-  },
-  dismissButtonText: {
-    color: colors.green,
-    fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-});

@@ -4,35 +4,19 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
-
-// Define theme colors
-const colors = {
-  background: '#18181b', // dark zinc-900
-  card: '#27272a',      // dark zinc-800
-  text: '#f4f4f5',      // zinc-100
-  textSecondary: '#a1a1aa', // zinc-400
-  border: '#3f3f46',    // zinc-700
-  green: '#10b981',     // emerald-500
-  greenLight: '#059669', // emerald-600
-};
-
-type Entry = {
-  id: string;
-  label?: string;
-  calories: number;
-  protein: number;
-  timestamp: number;
-};
+import { Entry, loadEntries, saveEntries } from '../utils/storageService';
+import { editMealScreenStyles as styles } from '../styles/editMealScreenStyles';
+import { colors } from '../styles/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EditMeal'>;
 
@@ -42,31 +26,75 @@ export default function EditMealScreen({ navigation, route }: Props) {
   const [label, setLabel] = useState(initialLabel || '');
   const [caloriesInput, setCaloriesInput] = useState(initialCalories.toString());
   const [proteinInput, setProteinInput] = useState(initialProtein.toString());
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
     const calories = parseInt(caloriesInput);
     const protein = parseInt(proteinInput);
     
-    if (isNaN(calories) || isNaN(protein)) return;
+    if (isNaN(calories) || isNaN(protein)) {
+      Alert.alert('Invalid input', 'Please enter valid numbers for calories and protein');
+      return;
+    }
 
-    const storedEntriesJson = await AsyncStorage.getItem('entries');
-    if (!storedEntriesJson) return;
-    
-    const entries = JSON.parse(storedEntriesJson) as Entry[];
-    const updatedEntries = entries.map((entry: Entry) => {
-      if (entry.id === id) {
-        return {
-          ...entry,
-          label: label.trim() || undefined,
-          calories,
-          protein,
-        };
+    setIsSaving(true);
+    try {
+      // Load fresh entries every time to avoid overwriting other changes
+      const currentEntries = await loadEntries();
+      console.log(`Editing meal ${id} - loaded ${currentEntries.length} entries for updating`);
+      
+      // Update the specific entry
+      const updatedEntries = currentEntries.map((entry: Entry) => {
+        if (entry.id === id) {
+          console.log(`Found entry to update: ${entry.id}`);
+          return {
+            ...entry,
+            label: label.trim() || undefined,
+            calories,
+            protein,
+          };
+        }
+        return entry;
+      });
+
+      // Save the updated entries
+      console.log(`Saving ${updatedEntries.length} entries after edit`);
+      const success = await saveEntries(updatedEntries);
+      
+      if (success) {
+        console.log('Edit saved successfully');
+        navigation.goBack();
+      } else {
+        console.error('First save attempt failed, retrying...');
+        // Try once more with fresh data
+        const freshEntries = await loadEntries();
+        const retryUpdatedEntries = freshEntries.map((entry: Entry) => {
+          if (entry.id === id) {
+            console.log(`Retry: Found entry to update: ${entry.id}`);
+            return {
+              ...entry,
+              label: label.trim() || undefined,
+              calories,
+              protein,
+            };
+          }
+          return entry;
+        });
+        
+        const retrySuccess = await saveEntries(retryUpdatedEntries);
+        if (retrySuccess) {
+          console.log('Edit saved successfully on retry');
+          navigation.goBack();
+        } else {
+          Alert.alert('Error', 'Failed to save changes. Please try again.');
+        }
       }
-      return entry;
-    });
-
-    await AsyncStorage.setItem('entries', JSON.stringify(updatedEntries));
-    navigation.goBack();
+    } catch (error) {
+      console.error('Failed to save meal update:', error);
+      Alert.alert('Error', 'Failed to save changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -106,6 +134,7 @@ export default function EditMealScreen({ navigation, route }: Props) {
             <TouchableOpacity 
               style={styles.buttonOutline}
               onPress={() => navigation.goBack()}
+              disabled={isSaving}
             >
               <Text style={styles.buttonOutlineText}>Cancel</Text>
             </TouchableOpacity>
@@ -113,79 +142,17 @@ export default function EditMealScreen({ navigation, route }: Props) {
             <TouchableOpacity 
               style={styles.buttonPrimary}
               onPress={handleSave}
+              disabled={isSaving}
             >
-              <Text style={styles.buttonPrimaryText}>Save</Text>
+              {isSaving ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text style={styles.buttonPrimaryText}>Save</Text>
+              )}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </SafeAreaView>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  inner: {
-    padding: 24,
-    flex: 1,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: colors.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 0,
-    padding: 12,
-    marginBottom: 12,
-    fontSize: 18,
-    color: colors.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    backgroundColor: colors.card,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  inputHalf: {
-    width: '48%',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-  },
-  buttonPrimary: {
-    backgroundColor: colors.green,
-    borderRadius: 0,
-    padding: 14,
-    width: '48%',
-    alignItems: 'center',
-  },
-  buttonPrimaryText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  buttonOutline: {
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 0,
-    padding: 14,
-    width: '48%',
-    alignItems: 'center',
-  },
-  buttonOutlineText: {
-    color: colors.text,
-    fontSize: 16,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-}); 
+} 
