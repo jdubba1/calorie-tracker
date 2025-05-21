@@ -19,26 +19,24 @@ export const getFontFamily = () => {
 };
 
 // Function to get color based on percentage
-export const getColorForPercentage = (percentage: number): string => {
-  // Green (0%) to Yellow (50%) to Red (100%)
-  if (percentage <= 0) return colors.green; // Emerald-500 for 0%
-  if (percentage >= 100) return colors.red; // Rose-500 for 100%
+export const getColorForPercentage = (percentage: number, invert: boolean = false): string => {
+  if (percentage >= 100) return invert ? colors.green : colors.red;
+  if (percentage <= 0) return invert ? colors.red : colors.green;
 
-  if (percentage < 50) {
-    // Green to Yellow gradient (0-50%)
-    const ratio = percentage / 50;
-    // Interpolate between green and yellow
-    const r = 16 + (234 - 16) * ratio; // from 16 (green) to 234 (yellow)
-    const g = 185 - (185 - 179) * ratio; // from 185 (green) to 179 (yellow)
-    const b = 129 - (129 - 8) * ratio; // from 129 (green) to 8 (yellow)
+  const clamped = Math.max(0, Math.min(100, percentage));
+  const pct = invert ? 100 - clamped : clamped;
+
+  if (pct < 50) {
+    const ratio = pct / 50;
+    const r = 16 + (234 - 16) * ratio;  // green to yellow
+    const g = 185 - (185 - 179) * ratio;
+    const b = 129 - (129 - 8) * ratio;
     return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
   } else {
-    // Yellow to Red gradient (50-100%)
-    const ratio = (percentage - 50) / 50;
-    // Interpolate between yellow and red
-    const r = 234 + (244 - 234) * ratio; // from 234 (yellow) to 244 (red)
-    const g = 179 - (179 - 63) * ratio; // from 179 (yellow) to 63 (red)
-    const b = 8 + (94 - 8) * ratio; // from 8 (yellow) to 94 (red)
+    const ratio = (pct - 50) / 50;
+    const r = 234 + (244 - 234) * ratio; // yellow to red
+    const g = 179 - (179 - 63) * ratio;
+    const b = 8 + (94 - 8) * ratio;
     return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
   }
 };

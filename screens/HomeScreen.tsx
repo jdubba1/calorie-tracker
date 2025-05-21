@@ -24,7 +24,6 @@ import { estimateNutrition } from "../utils/openaiUtils";
 import { transcribeAudio } from "../utils/whisperUtils";
 import * as FileSystem from "expo-file-system";
 import { Audio } from "expo-av";
-import AISparkleIcon from "../components/AISparkleIcon";
 import MicrophoneIcon from "../components/MicrophoneIcon";
 import StopIcon from "../components/StopIcon";
 import LoadingDots from "../components/LoadingDots";
@@ -43,6 +42,10 @@ import { colors, getColorForPercentage } from "../styles/theme";
 import { homeScreenStyles as styles } from "../styles/homeScreenStyles";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
+
+
+// TODO: ADD AI OPTIONS TO SETTINGS SCREEN
+// * HOW NICE SHOULD IT BE, ETC, OPTIONS TO ADD COMMON MEALS
 
 export default function HomeScreen({ navigation }: Props) {
   const accessoryID = "doneAccessory";
@@ -65,6 +68,7 @@ export default function HomeScreen({ navigation }: Props) {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [calorieGoal, setCalorieGoal] = useState("");
   const [proteinGoal, setProteinGoal] = useState("");
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const totalCalories = todayEntries.reduce((sum, e) => sum + e.calories, 0);
   const totalProtein = todayEntries.reduce((sum, e) => sum + e.protein, 0);
@@ -79,7 +83,12 @@ export default function HomeScreen({ navigation }: Props) {
       ? Math.round((totalProtein / parseInt(proteinGoal)) * 100)
       : 0;
 
-  // Request permissions for recording
+    console.log('proteingoal', proteinGoal)
+    console.log('totalprotein', totalProtein)
+    console.log('caloriepercentage', caloriePercentage)
+    console.log('proteinpercentage', proteinPercentage)
+
+  // ! Request permissions for recording
   useEffect(() => {
     (async () => {
       const { status } = await Audio.requestPermissionsAsync();
@@ -92,7 +101,7 @@ export default function HomeScreen({ navigation }: Props) {
     })();
   }, []);
 
-  // Filter entries to only show today's
+  // * Filter entries to only show today's
   const updateTodayEntries = useCallback(
     (allEntries: Entry[]) => {
       const today = new Date().toDateString();
@@ -126,7 +135,7 @@ export default function HomeScreen({ navigation }: Props) {
   // Refs for tracking loading state and preventing loops
   const initialLoadRef = useRef(false);
 
-  // Initial load effect - only runs ONCE on mount
+  // * Initial load effect - only runs ONCE on mount
   useEffect(() => {
     const load = async () => {
       // Prevent duplicate loads
@@ -212,7 +221,7 @@ export default function HomeScreen({ navigation }: Props) {
     return () => clearInterval(timer);
   }, []); // Empty dependency array - only run once on mount
 
-  // Reload entries when screen comes into focus - USING REF TO PREVENT LOOPS
+  // * Reload entries when screen comes into focus - USING REF TO PREVENT LOOPS
   const isLoadingRef = useRef(false);
 
   useFocusEffect(
@@ -377,15 +386,18 @@ export default function HomeScreen({ navigation }: Props) {
     try {
       const result = await estimateNutrition(label.trim());
       if (result) {
-        if (!result.isFoodItem) {
+        if (!result.containsFoodItem) {
           setErrorMessage(
-            "Failed to estimate calories: input doesn't appear to be a food item.",
+            "No food items detected in your description. Please try again with a description that includes food or drinks.",
           );
           setCaloriesInput("");
           setProteinInput("");
         } else {
           setCaloriesInput(result.calories.toString());
           setProteinInput(result.protein.toString());
+          if (result.label && result.label.trim() !== "") {
+            setLabel(result.label);
+          }
           setIsAIGenerated(true);
         }
       } else {
@@ -464,15 +476,18 @@ export default function HomeScreen({ navigation }: Props) {
         setIsAILoading(true);
         const result = await estimateNutrition(transcript);
         if (result) {
-          if (!result.isFoodItem) {
+          if (!result.containsFoodItem) {
             setErrorMessage(
-              "Failed to estimate calories: input doesn't appear to be a food item.",
+              "No food items detected in your recording. Please try again or enter your meal manually.",
             );
             setCaloriesInput("");
             setProteinInput("");
           } else {
             setCaloriesInput(result.calories.toString());
             setProteinInput(result.protein.toString());
+            if (result.label && result.label.trim() !== "") {
+              setLabel(result.label);
+            }
             setIsAIGenerated(true);
           }
         }
@@ -527,6 +542,34 @@ export default function HomeScreen({ navigation }: Props) {
       keyboardDidHideListener.remove();
     };
   }, []);
+
+  // Set up pulsing animation for recording button
+  useEffect(() => {
+    if (isRecording) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.2,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      // Reset animation when not recording
+      pulseAnim.setValue(1);
+    }
+    
+    return () => {
+      // Clean up animation when component unmounts
+      pulseAnim.setValue(1);
+    };
+  }, [isRecording, pulseAnim]);
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -586,7 +629,7 @@ export default function HomeScreen({ navigation }: Props) {
                         <Text
                           style={[
                             styles.metricInfoText,
-                            { color: getColorForPercentage(proteinPercentage) },
+                            { color: getColorForPercentage(proteinPercentage, true) },
                           ]}
                         >
                           {proteinPercentage}%
@@ -672,26 +715,39 @@ export default function HomeScreen({ navigation }: Props) {
                               size="small"
                               color={colors.red}
                             />
+                          ) : isRecording ? (
+                            <Animated.View
+                              style={{
+                                transform: [{ scale: pulseAnim }],
+                              }}
+                            >
+                              <StopIcon size={24} color={colors.red} />
+                            </Animated.View>
                           ) : (
                             <MicrophoneIcon
                               size={24}
-                              isRecording={isRecording}
+                              isRecording={false}
                             />
                           )}
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                          style={styles.iconButton}
+                          style={[
+                            styles.generateButton,
+                            { borderColor: colors.green }
+                          ]}
                           onPress={handleAIEstimate}
                           disabled={isAILoading || label.trim() === ""}
                         >
                           {isAILoading ? (
                             <ActivityIndicator
                               size="small"
-                              color={colors.purple}
+                              color={colors.green}
                             />
                           ) : (
-                            <AISparkleIcon size={24} />
+                            <Text style={[styles.generateButtonText, { color: colors.green }]}>
+                              Generate
+                            </Text>
                           )}
                         </TouchableOpacity>
                       </View>

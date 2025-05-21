@@ -7,7 +7,8 @@ export const estimateNutrition = async (
 ): Promise<{
   calories: number;
   protein: number;
-  isFoodItem: boolean;
+  containsFoodItem: boolean;
+  label: string;
 } | null> => {
   try {
     // Get API key from environment variables
@@ -30,11 +31,11 @@ export const estimateNutrition = async (
           {
             role: "system",
             content:
-              "You are a nutrition expert. Provide estimated calories and protein content for food descriptions. Respond ONLY with a JSON object containing calories (in kcal), protein (in grams), and isFoodItem (boolean) as properties. Make reasonable estimates based on typical portions. If the input is not a food or drink item, set calories and protein to 0 and isFoodItem to false. For food items, set isFoodItem to true. For coffee drinks, assume the coffee was ordered from a artisanal coffee shop, not a starbucks (cortado 30ml milk, cappuccino 12 ml milk, lattes are 12 oz, iced lattest have less, etc.",
+              "You are a nutrition expert. Extract any food or drink items from user descriptions and estimate nutrition values. Respond ONLY with a JSON object containing: 1) calories (in kcal), 2) protein (in grams), 3) containsFoodItem (boolean), and 4) label (a clean, concise summary of just the food items mentioned, contains some size details). If ANY food or drink is mentioned, set containsFoodItem to true and provide estimates. If NO food items are found, set calories and protein to 0, containsFoodItem to false, and label to an empty string. For coffee drinks, assume typical artisanal coffee shop sizes. Example: 'I was walking and had a burger for lunch then went home' → containsFoodItem: true, label: 'burger'. 'Just drinking some water while working' → containsFoodItem: true, label: 'water'. 'No food here, just talking about my day' → containsFoodItem: false.",
           },
           {
             role: "user",
-            content: `Estimate calories and protein for: ${foodDescription}`,
+            content: `Extract food items and estimate nutrition for: ${foodDescription}`,
           },
         ],
         temperature: 0.3,
@@ -53,12 +54,14 @@ export const estimateNutrition = async (
     if (
       typeof resultJson.calories === "number" &&
       typeof resultJson.protein === "number" &&
-      typeof resultJson.isFoodItem === "boolean"
+      typeof resultJson.containsFoodItem === "boolean" &&
+      typeof resultJson.label === "string"
     ) {
       return {
         calories: Math.round(resultJson.calories),
         protein: Math.round(resultJson.protein),
-        isFoodItem: resultJson.isFoodItem,
+        containsFoodItem: resultJson.containsFoodItem,
+        label: resultJson.label,
       };
     } else {
       throw new Error("Invalid response format from API");

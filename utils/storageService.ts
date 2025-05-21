@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   ENTRIES: "entries",
   CALORIE_GOAL: "calorieGoal",
   PROTEIN_GOAL: "proteinGoal",
+  ONBOARDING_COMPLETE: "onboardingComplete",
 };
 
 // Entry type definition
@@ -165,6 +166,23 @@ export const saveGoals = async (
   const calorieSuccess = await saveCalorieGoal(calorieGoal);
   const proteinSuccess = await saveProteinGoal(proteinGoal);
   return calorieSuccess && proteinSuccess;
+};
+
+/**
+ * Mark onboarding as complete
+ */
+export const setOnboardingComplete = async (): Promise<boolean> => {
+  console.log("Marking onboarding as complete");
+  return await storeWithRetry(STORAGE_KEYS.ONBOARDING_COMPLETE, "true");
+};
+
+/**
+ * Check if onboarding has been completed
+ */
+export const isOnboardingComplete = async (): Promise<boolean> => {
+  console.log("Checking if onboarding is complete");
+  const result = await retrieveWithRetry<string>(STORAGE_KEYS.ONBOARDING_COMPLETE);
+  return result === "true";
 };
 
 /**

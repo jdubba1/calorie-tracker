@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -9,6 +9,8 @@ import MealsScreen from "./screens/MealScreen";
 import EditMealScreen from "./screens/EditMealScreen";
 import HistoryScreen from "./screens/HistoryScreen";
 import SettingsScreen from "./screens/SettingsScreen";
+import OnboardingScreen from "./screens/OnboardingScreen";
+import { isOnboardingComplete } from "./utils/storageService";
 
 // Define theme colors
 const colors = {
@@ -37,6 +39,7 @@ export type RootStackParamList = {
   Meals: undefined;
   History: undefined;
   Settings: undefined;
+  Onboarding: undefined;
   EditMeal: {
     id: string;
     label?: string;
@@ -50,12 +53,39 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   console.log("🔥 app loaded from metro!");
+  const [loading, setLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Function to check onboarding status
+  const checkOnboarding = async () => {
+    try {
+      const completed = await isOnboardingComplete();
+      setShowOnboarding(!completed);
+    } catch (error) {
+      console.error("Failed to check onboarding status:", error);
+      // Default to not showing onboarding if there's an error
+      setShowOnboarding(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial check on app load
+  useEffect(() => {
+    checkOnboarding();
+  }, []);
+
+  // Show nothing while loading
+  if (loading) {
+    return null;
+  }
+
   return (
     <GestureHandlerRootView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       <NavigationContainer theme={DarkTheme}>
         <Stack.Navigator
-          initialRouteName="Home"
+          initialRouteName={showOnboarding ? "Onboarding" : "Home"}
           screenOptions={{
             headerStyle: {
               backgroundColor: colors.background,
@@ -69,6 +99,11 @@ export default function App() {
             },
           }}
         >
+          <Stack.Screen
+            name="Onboarding"
+            component={OnboardingScreen}
+            options={{ headerShown: false }}
+          />
           <Stack.Screen
             name="Home"
             component={HomeScreen}

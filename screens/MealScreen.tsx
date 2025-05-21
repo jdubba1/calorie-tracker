@@ -16,9 +16,9 @@ import {
   formatDateForDisplay,
   getOffsetDate,
 } from "../utils/dateUtils";
-import { Entry, loadEntries, saveEntries } from "../utils/storageService";
+import { Entry, loadEntries, saveEntries, loadCalorieGoal, loadProteinGoal } from "../utils/storageService";
 import { mealScreenStyles as styles } from "../styles/mealScreenStyles";
-import { colors } from "../styles/theme";
+import { colors, getColorForPercentage } from "../styles/theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Meals">;
 
@@ -32,6 +32,8 @@ export default function MealsScreen({ navigation }: Props) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
   const isLoadingRef = useRef(false);
+  const [calorieGoal, setCalorieGoal] = useState("");
+  const [proteinGoal, setProteinGoal] = useState("");
 
   const loadMealEntries = async () => {
     setIsLoading(true);
@@ -78,8 +80,26 @@ export default function MealsScreen({ navigation }: Props) {
   // Load entries on initial mount
   useEffect(() => {
     loadMealEntries();
+    loadGoals();
     // Don't set entries to empty array on mount, which would trigger a save of empty data
   }, []);
+
+  const loadGoals = async () => {
+    try {
+      const storedCalorieGoal = await loadCalorieGoal();
+      const storedProteinGoal = await loadProteinGoal();
+
+      if (storedCalorieGoal) {
+        setCalorieGoal(storedCalorieGoal);
+      }
+
+      if (storedProteinGoal) {
+        setProteinGoal(storedProteinGoal);
+      }
+    } catch (error) {
+      console.error("Failed to load goals:", error);
+    }
+  };
 
   // When current date changes, filter entries
   useEffect(() => {
@@ -118,6 +138,9 @@ export default function MealsScreen({ navigation }: Props) {
             } else {
               console.log("MealScreen: No change in data, skipping update");
             }
+            
+            // Always refresh goals in case they changed
+            loadGoals();
           } catch (error) {
             console.error("Failed to check for changes:", error);
           } finally {
@@ -203,7 +226,7 @@ export default function MealsScreen({ navigation }: Props) {
           style={styles.actionButton}
           onPress={() => deleteEntry(item.id)}
         >
-          <Text style={styles.actionText}>Tap to Delete</Text>
+          <Text style={styles.actionText}>Delete</Text>
         </TouchableOpacity>
       </View>
     );
@@ -273,6 +296,15 @@ export default function MealsScreen({ navigation }: Props) {
   // Calculate daily totals
   const dailyCalories = filteredEntries.reduce((sum, e) => sum + e.calories, 0);
   const dailyProtein = filteredEntries.reduce((sum, e) => sum + e.protein, 0);
+  
+  // Calculate percentages for coloring
+  const caloriePercentage = calorieGoal && dailyCalories > 0
+    ? Math.round((dailyCalories / parseInt(calorieGoal)) * 100)
+    : 0;
+  
+  const proteinPercentage = proteinGoal && dailyProtein > 0
+    ? Math.round((dailyProtein / parseInt(proteinGoal)) * 100)
+    : 0;
 
   return (
     <View style={styles.container}>
@@ -306,8 +338,17 @@ export default function MealsScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.dailyTotals}>
-        <Text style={styles.totalValue}>
-          {dailyCalories} kcal / {dailyProtein}g protein
+        <Text style={[
+          styles.totalValue,
+          calorieGoal && { color: getColorForPercentage(caloriePercentage) }
+        ]}>
+          {dailyCalories} kcal
+        </Text>
+        <Text style={[
+          styles.totalValue,
+          proteinGoal && { color: getColorForPercentage(proteinPercentage, true) }
+        ]}>
+          {dailyProtein}g protein
         </Text>
       </View>
 
@@ -322,6 +363,7 @@ export default function MealsScreen({ navigation }: Props) {
       />
 
       <View style={styles.historyButtonContainer}>
+        <Text style={styles.swipeInstructionText}>swipe right to edit, left to delete</Text>
         <TouchableOpacity
           style={styles.historyButton}
           onPress={() => navigation.navigate("History")}

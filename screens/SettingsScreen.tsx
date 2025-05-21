@@ -19,9 +19,11 @@ import {
   loadCalorieGoal,
   loadProteinGoal,
   saveGoals,
+  STORAGE_KEYS,
 } from "../utils/storageService";
 import { settingsScreenStyles as styles } from "../styles/settingsScreenStyles";
 import { colors } from "../styles/theme";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 
@@ -77,6 +79,50 @@ export default function SettingsScreen({ navigation }: Props) {
     Keyboard.dismiss();
   };
 
+  const resetOnboardingState = async () => {
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEYS.ONBOARDING_COMPLETE);
+      Alert.alert(
+        "Onboarding Reset",
+        "Onboarding state has been reset. Restart the app to see the onboarding screen.",
+        [{ text: "OK" }]
+      );
+    } catch (error) {
+      console.error("Failed to reset onboarding:", error);
+      Alert.alert("Error", "Failed to reset onboarding state");
+    }
+  };
+
+  const resetAllData = async () => {
+    Alert.alert(
+      "Reset All Data",
+      "This will clear ALL app data including meals and goals. Are you sure?",
+      [
+        { 
+          text: "Cancel", 
+          style: "cancel" 
+        },
+        { 
+          text: "Reset Everything", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await AsyncStorage.clear();
+              Alert.alert(
+                "Data Reset",
+                "All app data has been reset. Restart the app to see the onboarding screen.",
+                [{ text: "OK" }]
+              );
+            } catch (error) {
+              console.error("Failed to reset data:", error);
+              Alert.alert("Error", "Failed to reset app data");
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeContainer}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
@@ -118,6 +164,26 @@ export default function SettingsScreen({ navigation }: Props) {
                 {proteinGoal !== "" && <Text style={styles.unitLabel}>g</Text>}
               </View>
             </View>
+
+            {/* Debug section - only shown in development mode */}
+            {__DEV__ && (
+              <View style={[styles.inputContainer, { marginTop: 40, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 20 }]}>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>developer options</Text>
+                <TouchableOpacity
+                  style={[styles.buttonOutline, { marginTop: 12 }]}
+                  onPress={resetOnboardingState}
+                >
+                  <Text style={styles.buttonOutlineText}>reset onboarding</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.buttonOutline, { marginTop: 8, borderColor: colors.red }]}
+                  onPress={resetAllData}
+                >
+                  <Text style={[styles.buttonOutlineText, { color: colors.red }]}>reset all data</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           <View style={styles.bottomBar}>

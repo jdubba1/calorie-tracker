@@ -171,6 +171,21 @@ export const homeScreenStyles = StyleSheet.create({
     width: 48,
     height: 48,
   },
+  generateButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    padding: 12,
+    marginLeft: 8,
+    height: 48,
+    paddingHorizontal: 16,
+  },
+  generateButtonText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+  },
   clearButton: {
     alignItems: "center",
     justifyContent: "center",
@@ -183,7 +198,7 @@ export const homeScreenStyles = StyleSheet.create({
   },
   clearButtonText: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   recordingButton: {
@@ -234,7 +249,7 @@ export const homeScreenStyles = StyleSheet.create({
   bottomBar: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 24,
+    padding: 16,
     paddingTop: 12,
     paddingBottom: Platform.OS === "ios" ? 36 : 24,
     backgroundColor: colors.background,
@@ -270,6 +285,7 @@ export const homeScreenStyles = StyleSheet.create({
   },
   buttonOutlineText: {
     color: colors.text,
+    fontWeight: "bold",
     fontSize: 14,
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
