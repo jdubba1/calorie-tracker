@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,47 +11,47 @@ import {
   TouchableWithoutFeedback,
   Alert,
   ActivityIndicator,
-} from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
-import { useFocusEffect } from '@react-navigation/native';
-import { 
-  loadCalorieGoal, 
-  loadProteinGoal, 
-  saveGoals 
-} from '../utils/storageService';
-import { settingsScreenStyles as styles } from '../styles/settingsScreenStyles';
-import { colors } from '../styles/theme';
+} from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../App";
+import { useFocusEffect } from "@react-navigation/native";
+import {
+  loadCalorieGoal,
+  loadProteinGoal,
+  saveGoals,
+} from "../utils/storageService";
+import { settingsScreenStyles as styles } from "../styles/settingsScreenStyles";
+import { colors } from "../styles/theme";
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
+type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 
 export default function SettingsScreen({ navigation }: Props) {
-  const [calorieGoal, setCalorieGoal] = useState('');
-  const [proteinGoal, setProteinGoal] = useState('');
+  const [calorieGoal, setCalorieGoal] = useState("");
+  const [proteinGoal, setProteinGoal] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      console.log('SettingsScreen: Screen focused, loading fresh data');
+      console.log("SettingsScreen: Screen focused, loading fresh data");
       loadGoals();
-    }, [])
+    }, []),
   );
 
   const loadGoals = async () => {
     try {
       const storedCalorieGoal = await loadCalorieGoal();
       const storedProteinGoal = await loadProteinGoal();
-      
+
       if (storedCalorieGoal) {
         setCalorieGoal(storedCalorieGoal);
       }
-      
+
       if (storedProteinGoal) {
         setProteinGoal(storedProteinGoal);
       }
     } catch (error) {
-      console.error('Failed to load goals', error);
-      Alert.alert('Error', 'Failed to load your goals');
+      console.error("Failed to load goals", error);
+      Alert.alert("Error", "Failed to load your goals");
     }
   };
 
@@ -59,15 +59,15 @@ export default function SettingsScreen({ navigation }: Props) {
     setIsSaving(true);
     try {
       const success = await saveGoals(calorieGoal, proteinGoal);
-      
+
       if (success) {
         navigation.goBack();
       } else {
-        Alert.alert('Error', 'Failed to save your goals. Please try again.');
+        Alert.alert("Error", "Failed to save your goals. Please try again.");
       }
     } catch (error) {
-      console.error('Failed to save goals', error);
-      Alert.alert('Error', 'Failed to save your goals. Please try again.');
+      console.error("Failed to save goals", error);
+      Alert.alert("Error", "Failed to save your goals. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -84,7 +84,7 @@ export default function SettingsScreen({ navigation }: Props) {
         <View style={styles.container}>
           <View style={styles.content}>
             <Text style={styles.title}>daily goals</Text>
-            
+
             <View style={styles.inputContainer}>
               <Text style={styles.label}>daily calorie goal</Text>
               <View style={styles.inputWrapper}>
@@ -97,12 +97,12 @@ export default function SettingsScreen({ navigation }: Props) {
                   keyboardType="numeric"
                   returnKeyType="done"
                 />
-                {calorieGoal !== '' && (
+                {calorieGoal !== "" && (
                   <Text style={styles.unitLabel}>kcal</Text>
                 )}
               </View>
             </View>
-            
+
             <View style={styles.inputContainer}>
               <Text style={styles.label}>daily protein goal</Text>
               <View style={styles.inputWrapper}>
@@ -115,23 +115,21 @@ export default function SettingsScreen({ navigation }: Props) {
                   keyboardType="numeric"
                   returnKeyType="done"
                 />
-                {proteinGoal !== '' && (
-                  <Text style={styles.unitLabel}>g</Text>
-                )}
+                {proteinGoal !== "" && <Text style={styles.unitLabel}>g</Text>}
               </View>
             </View>
           </View>
-          
+
           <View style={styles.bottomBar}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.buttonOutline}
               onPress={() => navigation.goBack()}
               disabled={isSaving}
             >
               <Text style={styles.buttonOutlineText}>cancel</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.buttonPrimary}
               onPress={saveGoalsAndNavigate}
               disabled={isSaving}
@@ -147,4 +145,4 @@ export default function SettingsScreen({ navigation }: Props) {
       </TouchableWithoutFeedback>
     </SafeAreaView>
   );
-} 
+}

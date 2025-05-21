@@ -1,5 +1,11 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+} from "react-native";
 
 type SquareSwitchProps = {
   value: boolean;
@@ -13,10 +19,10 @@ type SquareSwitchProps = {
 export default function SquareSwitch({
   value,
   onValueChange,
-  leftLabel = 'Off',
-  rightLabel = 'On',
-  activeColor = '#a855f7', // purple-500
-  inactiveColor = '#059669', // emerald-600r
+  leftLabel = "Off",
+  rightLabel = "On",
+  activeColor = "#a855f7", // purple-500
+  inactiveColor = "#059669", // emerald-600r
 }: SquareSwitchProps) {
   return (
     <View style={styles.container}>
@@ -63,26 +69,26 @@ export default function SquareSwitch({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 0,
   },
   option: {
     paddingVertical: 6,
     paddingHorizontal: 8,
     borderWidth: 1,
-    borderColor: '#3f3f46', // zinc-700
-    backgroundColor: '#27272a', // zinc-800
+    borderColor: "#3f3f46", // zinc-700
+    backgroundColor: "#27272a", // zinc-800
   },
   activeOption: {
-    backgroundColor: '#18181b', // zinc-900
+    backgroundColor: "#18181b", // zinc-900
   },
   label: {
-    color: '#a1a1aa', // zinc-400
+    color: "#a1a1aa", // zinc-400
     fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   activeLabel: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
-}); 
+});

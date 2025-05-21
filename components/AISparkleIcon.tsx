@@ -1,13 +1,16 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Svg, Path } from 'react-native-svg';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { Svg, Path } from "react-native-svg";
 
 type AISparkleIconProps = {
   size?: number;
   color?: string;
 };
 
-export default function AISparkleIcon({ size = 24, color = '#f4f4f5' }: AISparkleIconProps) {
+export default function AISparkleIcon({
+  size = 24,
+  color = "#f4f4f5",
+}: AISparkleIconProps) {
   return (
     <View style={styles.container}>
       <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -22,7 +25,7 @@ export default function AISparkleIcon({ size = 24, color = '#f4f4f5' }: AISparkl
 
 const styles = StyleSheet.create({
   container: {
-    justifyContent: 'center',
-    alignItems: 'center'
-  }
-}); 
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

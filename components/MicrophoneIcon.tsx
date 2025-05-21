@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Svg, Path } from 'react-native-svg';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { Svg, Path } from "react-native-svg";
 
 type MicrophoneIconProps = {
   size?: number;
@@ -8,7 +8,11 @@ type MicrophoneIconProps = {
   isRecording?: boolean;
 };
 
-export default function MicrophoneIcon({ size = 24, color = '#f4f4f5', isRecording = false }: MicrophoneIconProps) {
+export default function MicrophoneIcon({
+  size = 24,
+  color = "#f4f4f5",
+  isRecording = false,
+}: MicrophoneIconProps) {
   return (
     <View style={styles.container}>
       <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -21,26 +25,24 @@ export default function MicrophoneIcon({ size = 24, color = '#f4f4f5', isRecordi
           fill={isRecording ? "#ef4444" : color}
         />
       </Svg>
-      {isRecording && (
-        <View style={styles.recordingIndicator} />
-      )}
+      {isRecording && <View style={styles.recordingIndicator} />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative'
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
   },
   recordingIndicator: {
-    position: 'absolute',
+    position: "absolute",
     top: -4,
     right: -4,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#ef4444',
-  }
-}); 
+    backgroundColor: "#ef4444",
+  },
+});

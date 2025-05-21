@@ -1,21 +1,34 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Animated as RNAnimated, Alert } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
-import { Swipeable } from 'react-native-gesture-handler';
-import { useFocusEffect } from '@react-navigation/native';
-import { isFromDate, formatDateForDisplay, getOffsetDate } from '../utils/dateUtils';
-import { Entry, loadEntries, saveEntries } from '../utils/storageService';
-import { mealScreenStyles as styles } from '../styles/mealScreenStyles';
-import { colors } from '../styles/theme';
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  Animated as RNAnimated,
+  Alert,
+} from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../App";
+import { Swipeable } from "react-native-gesture-handler";
+import { useFocusEffect } from "@react-navigation/native";
+import {
+  isFromDate,
+  formatDateForDisplay,
+  getOffsetDate,
+} from "../utils/dateUtils";
+import { Entry, loadEntries, saveEntries } from "../utils/storageService";
+import { mealScreenStyles as styles } from "../styles/mealScreenStyles";
+import { colors } from "../styles/theme";
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Meals'>;
+type Props = NativeStackScreenProps<RootStackParamList, "Meals">;
 
 export default function MealsScreen({ navigation }: Props) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [filteredEntries, setFilteredEntries] = useState<Entry[]>([]);
   const swipeableRefs = useRef<Swipeable[]>([]);
-  const [itemsBeingDeleted, setItemsBeingDeleted] = useState<{[key: string]: RNAnimated.Value}>({});
+  const [itemsBeingDeleted, setItemsBeingDeleted] = useState<{
+    [key: string]: RNAnimated.Value;
+  }>({});
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
   const isLoadingRef = useRef(false);
@@ -24,8 +37,10 @@ export default function MealsScreen({ navigation }: Props) {
     setIsLoading(true);
     try {
       const allEntries = await loadEntries();
-      console.log(`MealScreen: Loaded ${allEntries.length} entries from storage`);
-      
+      console.log(
+        `MealScreen: Loaded ${allEntries.length} entries from storage`,
+      );
+
       // Only update entries if we actually got some or if entries state is already empty
       // This prevents overwriting existing entries with an empty array
       if (allEntries.length > 0 || entries.length === 0) {
@@ -33,8 +48,8 @@ export default function MealsScreen({ navigation }: Props) {
         filterEntriesByDate(allEntries, currentDate);
       }
     } catch (error) {
-      console.error('Failed to load entries:', error);
-      Alert.alert('Error', 'Failed to load your meal data');
+      console.error("Failed to load entries:", error);
+      Alert.alert("Error", "Failed to load your meal data");
     } finally {
       setIsLoading(false);
     }
@@ -42,7 +57,7 @@ export default function MealsScreen({ navigation }: Props) {
 
   const filterEntriesByDate = (allEntries: Entry[], date: Date) => {
     setFilteredEntries(
-      allEntries.filter(entry => isFromDate(entry.timestamp, date))
+      allEntries.filter((entry) => isFromDate(entry.timestamp, date)),
     );
   };
 
@@ -80,82 +95,90 @@ export default function MealsScreen({ navigation }: Props) {
       // CRITICAL FIX: Skip if we're already in a loading cycle to prevent infinite loops
       if (!isLoadingRef.current) {
         isLoadingRef.current = true;
-        
+
         // Load fresh data when screen appears, but only if really needed
-        console.log('MealScreen (focus): Checking for new data');
+        console.log("MealScreen (focus): Checking for new data");
         const checkForChanges = async () => {
           try {
             const freshEntries = await loadEntries();
             // Only update if data actually changed to avoid re-render loops
-            const currentIds = entries.map(e => e.id).sort().join(',');
-            const newIds = freshEntries.map(e => e.id).sort().join(',');
-            
+            const currentIds = entries
+              .map((e) => e.id)
+              .sort()
+              .join(",");
+            const newIds = freshEntries
+              .map((e) => e.id)
+              .sort()
+              .join(",");
+
             if (currentIds !== newIds) {
-              console.log('MealScreen: Entry data changed, updating');
+              console.log("MealScreen: Entry data changed, updating");
               setEntries(freshEntries);
               filterEntriesByDate(freshEntries, currentDate);
             } else {
-              console.log('MealScreen: No change in data, skipping update');
+              console.log("MealScreen: No change in data, skipping update");
             }
           } catch (error) {
-            console.error('Failed to check for changes:', error);
+            console.error("Failed to check for changes:", error);
           } finally {
             isLoadingRef.current = false;
           }
         };
-        
+
         checkForChanges();
       }
-      
+
       // Close any open swipeables
-      swipeableRefs.current.forEach(ref => {
-        if (ref && typeof ref.close === 'function') {
+      swipeableRefs.current.forEach((ref) => {
+        if (ref && typeof ref.close === "function") {
           ref.close();
         }
       });
-    }, []) // REMOVING entries dependency to prevent infinite loops
+    }, []), // REMOVING entries dependency to prevent infinite loops
   );
 
   const deleteEntry = async (id: string) => {
     // Create new animated value for this item if it doesn't exist
     if (!itemsBeingDeleted[id]) {
       const newAnimValue = new RNAnimated.Value(1);
-      setItemsBeingDeleted(prev => ({...prev, [id]: newAnimValue}));
-      
+      setItemsBeingDeleted((prev) => ({ ...prev, [id]: newAnimValue }));
+
       // Close the swipeable if still open
-      const index = filteredEntries.findIndex(e => e.id === id);
+      const index = filteredEntries.findIndex((e) => e.id === id);
       if (index !== -1 && swipeableRefs.current[index]) {
         swipeableRefs.current[index].close();
       }
-      
+
       // Start the animation
       RNAnimated.timing(newAnimValue, {
         toValue: 0,
         duration: 300,
-        useNativeDriver: true
+        useNativeDriver: true,
       }).start(async () => {
         // After animation completes, update the data
-        const updated = entries.filter(e => e.id !== id);
+        const updated = entries.filter((e) => e.id !== id);
         setEntries(updated);
-        
+
         // Persist changes - with better error handling and retry
         try {
-          console.log(`Deleting entry ${id} and saving updated entries array (${updated.length} entries)`);
+          console.log(
+            `Deleting entry ${id} and saving updated entries array (${updated.length} entries)`,
+          );
           const saveSuccess = await saveEntries(updated);
-          
+
           if (!saveSuccess) {
             // If the initial save failed, try once more
-            console.log('First save attempt failed, retrying...');
+            console.log("First save attempt failed, retrying...");
             await saveEntries(updated);
           }
         } catch (error) {
-          console.error('Failed to save after delete:', error);
-          Alert.alert('Error', 'Failed to delete meal. Please try again.');
+          console.error("Failed to save after delete:", error);
+          Alert.alert("Error", "Failed to delete meal. Please try again.");
         }
-        
+
         // Remove this item from being tracked
-        setItemsBeingDeleted(prev => {
-          const newState = {...prev};
+        setItemsBeingDeleted((prev) => {
+          const newState = { ...prev };
           delete newState[id];
           return newState;
         });
@@ -164,7 +187,7 @@ export default function MealsScreen({ navigation }: Props) {
   };
 
   const editEntry = (entry: Entry) => {
-    navigation.navigate('EditMeal', {
+    navigation.navigate("EditMeal", {
       id: entry.id,
       label: entry.label,
       calories: entry.calories,
@@ -189,7 +212,7 @@ export default function MealsScreen({ navigation }: Props) {
   const renderLeftActions = (item: Entry) => {
     return (
       <View style={styles.leftAction}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.actionButton}
           onPress={() => editEntry(item)}
         >
@@ -199,25 +222,29 @@ export default function MealsScreen({ navigation }: Props) {
     );
   };
 
-  const renderItem = ({ item, index }: { item: Entry, index: number }) => {
+  const renderItem = ({ item, index }: { item: Entry; index: number }) => {
     // Get animation value for this item if it exists
     const animValue = itemsBeingDeleted[item.id];
-    
+
     // Create animated style if this item is being deleted
-    const animatedStyle = animValue ? {
-      opacity: animValue,
-      transform: [{
-        translateX: animValue.interpolate({
-          inputRange: [0, 1],
-          outputRange: [-100, 0]
-        })
-      }]
-    } : {};
+    const animatedStyle = animValue
+      ? {
+          opacity: animValue,
+          transform: [
+            {
+              translateX: animValue.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-100, 0],
+              }),
+            },
+          ],
+        }
+      : {};
 
     return (
       <RNAnimated.View style={animatedStyle}>
         <Swipeable
-          ref={ref => {
+          ref={(ref) => {
             if (ref) {
               swipeableRefs.current[index] = ref;
             }
@@ -233,7 +260,7 @@ export default function MealsScreen({ navigation }: Props) {
           hitSlop={{ left: 10, right: 10 }} // Increase touch area
         >
           <View style={styles.row}>
-            <Text style={styles.label}>{item.label || 'Untitled'}</Text>
+            <Text style={styles.label}>{item.label || "Untitled"}</Text>
             <Text style={styles.values}>
               {item.calories} kcal / {item.protein}g protein
             </Text>
@@ -253,37 +280,51 @@ export default function MealsScreen({ navigation }: Props) {
         <TouchableOpacity style={styles.navButton} onPress={goToPreviousDay}>
           <Text style={styles.navButtonText}>←</Text>
         </TouchableOpacity>
-        
+
         <Text style={styles.dateText}>{formatDateForDisplay(currentDate)}</Text>
-        
-        <TouchableOpacity 
-          style={styles.navButton} 
+
+        <TouchableOpacity
+          style={styles.navButton}
           onPress={goToNextDay}
-          disabled={new Date(currentDate).setHours(0,0,0,0) >= new Date().setHours(0,0,0,0)}
+          disabled={
+            new Date(currentDate).setHours(0, 0, 0, 0) >=
+            new Date().setHours(0, 0, 0, 0)
+          }
         >
-          <Text style={[
-            styles.navButtonText,
-            new Date(currentDate).setHours(0,0,0,0) >= new Date().setHours(0,0,0,0) ? styles.disabledText : {}
-          ]}>→</Text>
+          <Text
+            style={[
+              styles.navButtonText,
+              new Date(currentDate).setHours(0, 0, 0, 0) >=
+              new Date().setHours(0, 0, 0, 0)
+                ? styles.disabledText
+                : {},
+            ]}
+          >
+            →
+          </Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.dailyTotals}>
-        <Text style={styles.totalValue}>{dailyCalories} kcal / {dailyProtein}g protein</Text>
+        <Text style={styles.totalValue}>
+          {dailyCalories} kcal / {dailyProtein}g protein
+        </Text>
       </View>
-      
+
       <FlatList
         data={filteredEntries}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        ListEmptyComponent={<Text style={styles.emptyText}>No meals logged on this day.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No meals logged on this day.</Text>
+        }
         contentContainerStyle={styles.listContent}
       />
-      
+
       <View style={styles.historyButtonContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.historyButton}
-          onPress={() => navigation.navigate('History')}
+          onPress={() => navigation.navigate("History")}
         >
           <Text style={styles.historyButtonText}>View History</Text>
         </TouchableOpacity>
@@ -291,4 +332,3 @@ export default function MealsScreen({ navigation }: Props) {
     </View>
   );
 }
-

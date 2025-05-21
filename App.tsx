@@ -1,22 +1,22 @@
-import React from 'react';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet, StatusBar } from 'react-native';
+import React from "react";
+import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { StyleSheet, StatusBar } from "react-native";
 
-import HomeScreen from './screens/HomeScreen';
-import MealsScreen from './screens/MealScreen';
-import EditMealScreen from './screens/EditMealScreen';
-import HistoryScreen from './screens/HistoryScreen';
-import SettingsScreen from './screens/SettingsScreen';
+import HomeScreen from "./screens/HomeScreen";
+import MealsScreen from "./screens/MealScreen";
+import EditMealScreen from "./screens/EditMealScreen";
+import HistoryScreen from "./screens/HistoryScreen";
+import SettingsScreen from "./screens/SettingsScreen";
 
 // Define theme colors
 const colors = {
-  background: '#18181b', // dark zinc-900
-  card: '#27272a',      // dark zinc-800
-  text: '#f4f4f5',      // zinc-100
-  textSecondary: '#a1a1aa', // zinc-400
-  border: '#3f3f46',    // zinc-700
+  background: "#18181b", // dark zinc-900
+  card: "#27272a", // dark zinc-800
+  text: "#f4f4f5", // zinc-100
+  textSecondary: "#a1a1aa", // zinc-400
+  border: "#3f3f46", // zinc-700
 };
 
 // Create a dark theme for navigation
@@ -49,12 +49,12 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  console.log('🔥 app loaded from metro!')
+  console.log("🔥 app loaded from metro!");
   return (
     <GestureHandlerRootView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       <NavigationContainer theme={DarkTheme}>
-        <Stack.Navigator 
+        <Stack.Navigator
           initialRouteName="Home"
           screenOptions={{
             headerStyle: {
@@ -62,37 +62,37 @@ export default function App() {
             },
             headerTintColor: colors.text,
             headerTitleStyle: {
-              fontWeight: 'bold',
+              fontWeight: "bold",
             },
             contentStyle: {
               backgroundColor: colors.background,
-            }
+            },
           }}
         >
-          <Stack.Screen 
-            name="Home" 
-            component={HomeScreen} 
+          <Stack.Screen
+            name="Home"
+            component={HomeScreen}
             options={{ headerShown: false }}
           />
-          <Stack.Screen 
-            name="Meals" 
+          <Stack.Screen
+            name="Meals"
             component={MealsScreen}
-            options={{ title: 'Your Meals' }}
+            options={{ title: "Your Meals" }}
           />
-          <Stack.Screen 
-            name="History" 
+          <Stack.Screen
+            name="History"
             component={HistoryScreen}
-            options={{ title: 'Meal History' }}
+            options={{ title: "Meal History" }}
           />
-          <Stack.Screen 
-            name="EditMeal" 
+          <Stack.Screen
+            name="EditMeal"
             component={EditMealScreen}
-            options={{ title: 'Edit Meal' }}
+            options={{ title: "Edit Meal" }}
           />
-          <Stack.Screen 
-            name="Settings" 
+          <Stack.Screen
+            name="Settings"
             component={SettingsScreen}
-            options={{ title: 'Goals' }}
+            options={{ title: "Goals" }}
           />
         </Stack.Navigator>
       </NavigationContainer>
@@ -105,5 +105,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-
-

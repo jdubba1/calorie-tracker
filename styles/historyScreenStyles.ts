@@ -1,5 +1,5 @@
-import { StyleSheet, Platform } from 'react-native';
-import { colors } from './theme';
+import { StyleSheet, Platform } from "react-native";
+import { colors } from "./theme";
 
 export const historyScreenStyles = StyleSheet.create({
   container: {
@@ -7,13 +7,13 @@ export const historyScreenStyles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     color: colors.textSecondary,
     marginTop: 12,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   listContent: {
     padding: 20,
@@ -24,9 +24,9 @@ export const historyScreenStyles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   footer: {
     marginTop: 30,
@@ -37,10 +37,10 @@ export const historyScreenStyles = StyleSheet.create({
   },
   footerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.text,
     marginBottom: 10,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   statCard: {
     padding: 16,
@@ -51,34 +51,34 @@ export const historyScreenStyles = StyleSheet.create({
   },
   dateText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.text,
     marginBottom: 10,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   statItem: {
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
   },
   statValue: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   statLabel: {
     fontSize: 14,
     color: colors.textSecondary,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   emptyText: {
     color: colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     padding: 20,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  }
-}); 
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+  },
+});

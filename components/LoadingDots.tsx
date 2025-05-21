@@ -1,11 +1,11 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import React, { useEffect, useRef } from "react";
+import { View, Text, StyleSheet, Animated } from "react-native";
 
 type LoadingDotsProps = {
   color?: string;
 };
 
-export default function LoadingDots({ color = '#f4f4f5' }: LoadingDotsProps) {
+export default function LoadingDots({ color = "#f4f4f5" }: LoadingDotsProps) {
   const dot1Opacity = useRef(new Animated.Value(0.3)).current;
   const dot2Opacity = useRef(new Animated.Value(0.3)).current;
   const dot3Opacity = useRef(new Animated.Value(0.3)).current;
@@ -55,18 +55,24 @@ export default function LoadingDots({ color = '#f4f4f5' }: LoadingDotsProps) {
 
   return (
     <View style={styles.container}>
-      <Animated.Text style={[styles.dot, { color, opacity: dot1Opacity }]}>.</Animated.Text>
-      <Animated.Text style={[styles.dot, { color, opacity: dot2Opacity }]}>.</Animated.Text>
-      <Animated.Text style={[styles.dot, { color, opacity: dot3Opacity }]}>.</Animated.Text>
+      <Animated.Text style={[styles.dot, { color, opacity: dot1Opacity }]}>
+        .
+      </Animated.Text>
+      <Animated.Text style={[styles.dot, { color, opacity: dot2Opacity }]}>
+        .
+      </Animated.Text>
+      <Animated.Text style={[styles.dot, { color, opacity: dot3Opacity }]}>
+        .
+      </Animated.Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     height: 20,
   },
   dot: {
@@ -74,4 +80,4 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
     lineHeight: 30,
   },
-}); 
+});

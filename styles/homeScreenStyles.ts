@@ -1,16 +1,16 @@
-import { StyleSheet, Platform, Dimensions } from 'react-native';
-import { colors } from './theme';
+import { StyleSheet, Platform, Dimensions } from "react-native";
+import { colors } from "./theme";
 
 // Get screen dimensions
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // Function to calculate responsive sizes based on screen height
 const getResponsiveSizes = () => {
   // Define thresholds for different size categories
   // iPhone SE (smallest): ~667pt height
-  // Mid-size: ~736-812pt height  
+  // Mid-size: ~736-812pt height
   // Large (iPhone Pro Max): 926pt+ height
-  
+
   if (SCREEN_HEIGHT < 700) {
     // Small screen (iPhone SE, etc)
     return {
@@ -48,8 +48,8 @@ export const homeScreenStyles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
+    display: "flex",
+    flexDirection: "column",
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -65,9 +65,9 @@ export const homeScreenStyles = StyleSheet.create({
     paddingBottom: 16,
   },
   headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 12,
     marginBottom: 8,
   },
@@ -76,46 +76,46 @@ export const homeScreenStyles = StyleSheet.create({
   },
   totalsContainer: {
     marginBottom: 28,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   todayLabel: {
     fontSize: 16,
     color: colors.textSecondary,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   metricContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   metricInfoContainer: {
-    flexDirection: 'column',
-    justifyContent: 'center',
+    flexDirection: "column",
+    justifyContent: "center",
     marginLeft: 12,
     height: responsiveSizes.metricContainerHeight,
   },
   metricNumber: {
     fontSize: responsiveSizes.metricNumberSize,
-    fontWeight: 'bold',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontWeight: "bold",
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
     color: colors.text,
   },
   metricInfoText: {
     fontSize: responsiveSizes.metricInfoTextSize,
     color: colors.textSecondary,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
     marginVertical: responsiveSizes.verticalMargin,
   },
   headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
   inputLabel: {
     fontSize: 14,
     color: colors.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   largeInputContainer: {
     marginBottom: 0,
@@ -132,37 +132,37 @@ export const homeScreenStyles = StyleSheet.create({
   textArea: {
     fontSize: 14,
     color: colors.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    textAlignVertical: 'top',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    textAlignVertical: "top",
     padding: 0,
-    height: '100%',
+    height: "100%",
   },
   disabledInput: {
     opacity: 0.8,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     fontSize: 14,
     color: colors.textSecondary,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
     marginBottom: 8,
   },
   iconButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 8,
     marginBottom: 16,
   },
   rightButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   iconButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
@@ -172,8 +172,8 @@ export const homeScreenStyles = StyleSheet.create({
     height: 48,
   },
   clearButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
@@ -184,15 +184,15 @@ export const homeScreenStyles = StyleSheet.create({
   clearButtonText: {
     color: colors.text,
     fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   recordingButton: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    backgroundColor: "rgba(239, 68, 68, 0.2)",
     borderColor: colors.red,
   },
   errorMessage: {
     color: colors.red,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
     fontSize: 14,
     marginBottom: 8,
   },
@@ -203,75 +203,75 @@ export const homeScreenStyles = StyleSheet.create({
     padding: 12,
     fontSize: 14,
     color: colors.text,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
     backgroundColor: colors.card,
   },
   inputRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 12,
     marginBottom: 12,
   },
   inputWrapper: {
-    width: '48%',
-    position: 'relative',
+    width: "48%",
+    position: "relative",
   },
   inputHalf: {
-    width: '100%',
+    width: "100%",
   },
   unitLabel: {
-    position: 'absolute',
+    position: "absolute",
     right: 12,
     top: 12,
     color: colors.textSecondary,
     fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   aiGeneratedInput: {
     color: colors.purple,
     borderColor: colors.purple,
   },
   bottomBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     padding: 24,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    paddingBottom: Platform.OS === "ios" ? 36 : 24,
     backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     height: 96,
   },
   buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 12,
   },
   buttonPrimary: {
     backgroundColor: colors.green,
     borderRadius: 0,
     padding: 14,
-    width: '48%',
-    alignItems: 'center',
+    width: "48%",
+    alignItems: "center",
   },
   buttonPrimaryText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
     fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   buttonOutline: {
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 0,
     padding: 14,
-    width: '48%',
-    alignItems: 'center',
+    width: "48%",
+    alignItems: "center",
   },
   buttonOutlineText: {
     color: colors.text,
     fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
   accessoryContainer: {
     backgroundColor: colors.background,
@@ -279,9 +279,9 @@ export const homeScreenStyles = StyleSheet.create({
     borderColor: colors.border,
     padding: 8,
     paddingHorizontal: 16,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
   },
   dismissButton: {
     padding: 8,
@@ -289,7 +289,7 @@ export const homeScreenStyles = StyleSheet.create({
   dismissButtonText: {
     color: colors.green,
     fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontWeight: "bold",
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
-}); 
+});
